@@ -23,7 +23,7 @@ type Receiver struct {
 func (r *Receiver) Decode(b byte) ([]byte, error) {
 	// If start of Packet
 	if b == STX {
-		r.data = make([]byte, 0)
+		r.data = make([]byte, 0, 1500)
 		r.collecting = true
 		return nil, nil
 	}
@@ -33,22 +33,28 @@ func (r *Receiver) Decode(b byte) ([]byte, error) {
 		return nil, nil
 	}
 
+	// Check if we are esced
+	if r.esced {
+		switch b {
+		case ESTX, EETX, EESC:
+			// Add none escapped byte to data
+			r.data = append(r.data, (b & 0x7F))
+			r.esced = false
+		default:
+			r.collecting = false
+			return nil, errors.New("Bad Escapped Value")
+		}
+		return nil, nil
+	}
+
+	// Check for everything else
 	switch b {
 	case ETX:
 		r.collecting = false
 		return r.data, nil
 	case ESC:
 		r.esced = true
-	case ESTX, EETX, EESC:
-		if r.esced {
-			// Add none escapped byte to data
-			r.data = append(r.data, b&0x7F)
-			r.esced = false
-		}
 	default:
-		if r.esced {
-			return nil, errors.New("Bad Escapped Value")
-		}
 		r.data = append(r.data, b)
 	}
 
@@ -57,8 +63,7 @@ func (r *Receiver) Decode(b byte) ([]byte, error) {
 
 // Encode takes a byte slice and encodes it into BTP format
 func Encode(bin []byte) ([]byte, error) {
-	var buff []byte
-
+	buff := make([]byte, 0, 1500)
 	buff = append(buff, STX)
 
 	for _, b := range bin {
