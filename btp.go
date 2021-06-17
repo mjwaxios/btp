@@ -23,7 +23,7 @@ type Receiver struct {
 func (r *Receiver) Decode(b byte) ([]byte, error) {
 	// If start of Packet
 	if b == STX {
-		r.data = make([]byte, 1500)
+		r.data = make([]byte, 0)
 		r.collecting = true
 		return nil, nil
 	}
@@ -43,6 +43,7 @@ func (r *Receiver) Decode(b byte) ([]byte, error) {
 		if r.esced {
 			// Add none escapped byte to data
 			r.data = append(r.data, b&0x7F)
+			r.esced = false
 		}
 	default:
 		if r.esced {
