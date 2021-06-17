@@ -58,6 +58,8 @@ func (r *Receiver) Decode(b byte) ([]byte, error) {
 func Encode(bin []byte) ([]byte, error) {
 	var buff []byte
 
+	buff = append(buff, STX)
+
 	for _, b := range bin {
 		switch b {
 		case STX, ETX, ESC:
@@ -67,6 +69,8 @@ func Encode(bin []byte) ([]byte, error) {
 			buff = append(buff, b)
 		}
 	}
+
+	buff = append(buff, ETX)
 
 	return buff, nil
 }
